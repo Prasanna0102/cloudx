@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int
+  status    String   // e.g., 'building', 'deployed', 'failed'
+  buildLogs BuildLog[]
+  user      User     @relation(fields: [userId], references: [id])
+
+  BuildTask BuildTask[]
+}
+
+model BuildLog {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  buildStep  String   // e.g., 'cloning', 'installing', 'building', 'completed'
+  timestamp  DateTime @default(now())
+  output     String   // Store build logs or results
+  project    Project  @relation(fields: [projectId], references: [id])
+}
+
+model BuildTask {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  status     String   // e.g., 'queued', 'in progress', 'completed', 'failed'
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  project    Project  @relation(fields: [projectId], references: [id])
+}

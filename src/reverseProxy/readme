@@ -1,0 +1,41 @@
+# Reverse Proxy
+
+The **Reverse Proxy** is responsible for managing traffic to user projects. It handles routing, SSL termination, and caching to ensure that user applications are accessible securely and efficiently. This component ensures that once a user’s build is complete, traffic is routed to the appropriate deployed project, and the user experience is optimized with caching and SSL termination.
+
+### Key Features
+
+- **Routing**: Routes incoming traffic to the appropriate deployed project (e.g., `/userA/*` points to userA's deployed app).
+- **SSL Termination**: Handles HTTPS traffic securely, ensuring that all data between users and the platform is encrypted.
+- **Caching**: Improves performance by caching static files to speed up content delivery.
+
+## AWS Services Used
+
+The Reverse Proxy leverages several AWS services for routing, traffic management, and caching:
+
+- **API Gateway**: Acts as the reverse proxy in combination with AWS Lambda. It can handle both API traffic routing and manage incoming web traffic.
+- **Elastic Load Balancer (ELB)**: Distributes incoming web traffic to multiple containers, ensuring high availability and fault tolerance.
+- **CloudFront**: A Content Delivery Network (CDN) for caching static files and speeding up delivery of content to users.
+- **Route 53**: Manages custom domains for users, routing traffic to the correct projects via DNS records.
+
+## Folder Structure
+
+The Reverse Proxy is organized in the following structure under the `src/reverseProxy` directory:
+
+
+### Routes
+Defines the API routes for:
+- **Routing traffic**: Directing requests to the appropriate deployed services based on the URL path (e.g., `/userA/*`).
+- **Real-time deployment info**: Interacting with the Build Server and API Server to fetch real-time information about the status of deployments.
+
+### Handlers
+Contains the logic for:
+- **Proxying user requests**: Handling the forwarding of incoming user requests to the appropriate project.
+- **Managing SSL termination**: Handling the process of securely serving traffic via HTTPS.
+- **Caching**: Implementing caching mechanisms to speed up the delivery of static content.
+
+### Utils
+Holds helper functions for:
+- **SSL management**: Setting up and managing SSL certificates for HTTPS traffic.
+- **Caching**: Implementing caching strategies to optimize performance, particularly for static assets.
+- **Other utilities**: Additional helper functions for managing the reverse proxy's operations, such as error handling, request validation, and routing.
+
