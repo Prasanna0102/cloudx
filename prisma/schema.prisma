@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -13,39 +10,128 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  projects  Project[]
+// Enum Definitions
+enum BuildTaskStatus {
+  Queued
+  InProgress
+  Completed
+  Failed
+  Cancelled
+  TimedOut
+  Retrying
 }
 
-model Project {
-  id        Int      @id @default(autoincrement())
-  name      String
-  userId    Int
-  status    String   // e.g., 'building', 'deployed', 'failed'
-  buildLogs BuildLog[]
-  user      User     @relation(fields: [userId], references: [id])
+enum DeploymentStatus {
+  Pending
+  InProgress
+  Completed
+  Failed
+  RolledBack
+  Deactivated
+}
 
-  BuildTask BuildTask[]
+enum ProjectStatus {
+  Created
+  Building
+  Deployed
+  Failed
+  Saved
+  Archived
+}
+
+enum TeamRole {
+  Admin
+  Member
+}
+
+// User and Team Models
+model User {
+  id          String       @id @default(uuid())
+  username    String       @unique
+  email       String       @unique
+  createdAt   DateTime     @default(now())
+  projects    Project[]
+  teamMembers TeamMember[]
+}
+
+model Team {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+  members     TeamMember[]
+  projects    Project[]
+  analytics   TeamAnalytics?
+}
+
+model TeamMember {
+  id      String    @id @default(uuid())
+  teamId  String
+  userId  String
+  role    TeamRole
+  team    Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Project and Related Models
+model Project {
+  id          String       @id @default(uuid())
+  name        String
+  userId      String
+  teamId      String?
+  gitUrl      String
+  status      ProjectStatus @default(Created)
+  buildLogs   BuildLog[]
+  user        User          @relation(fields: [userId], references: [id])
+  team        Team?         @relation(fields: [teamId], references: [id])
+  buildTasks  BuildTask[]
+  deployments Deployment[]
+  lastBuildAt DateTime?
+  saveCount   Int           @default(0)
 }
 
 model BuildLog {
-  id         Int      @id @default(autoincrement())
-  projectId  Int
-  buildStep  String   // e.g., 'cloning', 'installing', 'building', 'completed'
-  timestamp  DateTime @default(now())
-  output     String   // Store build logs or results
-  project    Project  @relation(fields: [projectId], references: [id])
+  id         String    @id @default(uuid())
+  projectId  String
+  buildStep  String
+  timestamp  DateTime  @default(now())
+  output     String
+  isError    Boolean   @default(false)
+  project    Project   @relation(fields: [projectId], references: [id])
 }
 
 model BuildTask {
-  id         Int      @id @default(autoincrement())
-  projectId  Int
-  status     String   // e.g., 'queued', 'in progress', 'completed', 'failed'
-  startedAt  DateTime @default(now())
-  finishedAt DateTime?
-  project    Project  @relation(fields: [projectId], references: [id])
+  id          String         @id @default(uuid())
+  projectId   String
+  status      BuildTaskStatus @default(Queued)
+  startedAt   DateTime        @default(now())
+  finishedAt  DateTime?
+  triggeredBy String?
+  buildType   String?
+  version     Int?
+  project     Project         @relation(fields: [projectId], references: [id])
+}
+
+model Deployment {
+  id          String           @id @default(uuid())
+  projectId   String
+  subDomain   String
+  domain      String?
+  version     Int?
+  status      DeploymentStatus @default(Pending)
+  visits      Int              @default(0)
+  errorRate   Float?
+  createdAt   DateTime         @default(now())
+  project     Project          @relation(fields: [projectId], references: [id])
+}
+
+// Analytics Model
+model TeamAnalytics {
+  id              String  @id @default(uuid())
+  teamId          String  @unique
+  buildSuccessRate Float
+  avgBuildTime     Float
+  deployments      Int     @default(0)
+  projectCount     Int     @default(0)
+  team             Team    @relation(fields: [teamId], references: [id])
 }
